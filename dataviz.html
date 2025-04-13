@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataViz Explorer</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --secondary: #10b981;
+      --dark: #1e293b;
+      --light: #f8fafc;
+      --gray: #64748b;
+      --gray-light: #cbd5e1;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: var(--light);
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    h1 {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    
+    .description {
+      font-size: 1.1rem;
+      opacity: 0.8;
+    }
+    
+    .dashboard {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      flex: 1;
+    }
+    
+    .controls {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .control-group h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: 0.25rem;
+    }
+    
+    .control-group p {
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-bottom: 0.5rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+      color: var(--gray);
+    }
+    
+    select, input[type="range"], button, input[type="color"] {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid var(--gray-light);
+      font-size: 0.9rem;
+    }
+    
+    select, button {
+      cursor: pointer;
+      background-color: white;
+    }
+    
+    input[type="range"] {
+      padding: 0.25rem 0;
+    }
+    
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: var(--primary-light);
+    }
+    
+    .visualization {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--gray-light);
+      margin-bottom: 1rem;
+    }
+    
+    .tab {
+      padding: 0.75rem 1.25rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .tab.active {
+      border-bottom-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    .chart-container {
+      flex: 1;
+      position: relative;
+      min-height: 400px;
+    }
+    
+    .data-insights {
+      margin-top: 1.5rem;
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .stat-card {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-3px);
+    }
+    
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--gray);
+    }
+    
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+    
+    .loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+    }
+    
+    .loader.active {
+      display: block;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+    
+    footer {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--gray);
+      font-size: 0.9rem;
+      margin-top: 2rem;
+    }
+    
+    @media (max-width: 800px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+      
+      .controls {
+        order: 1;
+      }
+      
+      .visualization {
+        order: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DataViz Explorer</h1>
+    <p class="description">Interactive data visualization platform with real-time updates</p>
+  </header>
+  
+  <div class="container">
+    <div class="dashboard">
+      <div class="controls">
+        <div class="control-group">
+          <h3>Data Options</h3>
+          <p>Select dataset and variables to visualize</p>
+          
+          <label for="dataset">Dataset</label>
+          <select id="dataset">
+            <option value="sales">Sales Performance</option>
+            <option value="financial">Financial Metrics</option>
+            <option value="marketing">Marketing Analytics</option>
+            <option value="custom">Custom Upload</option>
+          </select>
+          
+          <label for="x-axis">X-Axis</label>
+          <select id="x-axis">
+            <option value="month">Month</option>
+            <option value="quarter">Quarter</option>
+            <option value="year">Year</option>
+            <option value="region">Region</option>
+          </select>
+          
+          <label for="y-axis">Y-Axis</label>
+          <select id="y-axis">
+            <option value="revenue">Revenue</option>
+            <option value="profit">Profit</option>
+            <option value="growth">Growth Rate</option>
+            <option value="customers">Customer Count</option>
+          </select>
+          
+          <label for="segment">Segment By</label>
+          <select id="segment">
+            <option value="none">None</option>
+            <option value="product">Product Category</option>
+            <option value="region">Region</option>
+            <option value="channel">Sales Channel</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <h3>Visualization Options</h3>
+          <p>Customize the appearance and behavior</p>
+          
+          <label for="chart-type">Chart Type</label>
+          <select id="chart-type">
+            <option value="bar">Bar Chart</option>
+            <option value="line">Line Chart</option>
+            <option value="scatter">Scatter Plot</option>
+            <option value="pie">Pie Chart</option>
+            <option value="radar">Radar Chart</option>
+          </select>
+          
+          <label for="theme">Color Theme</label>
+          <select id="theme">
+            <option value="default">Default</option>
+            <option value="pastel">Pastel</option>
+            <option value="monochrome">Monochrome</option>
+            <option value="warm">Warm</option>
+            <option value="cool">Cool</option>
+          </select>
+          
+          <label for="animation-speed">Animation Speed</label>
+          <input type="range" id="animation-speed" min="0" max="2000" step="100" value="800">
+          
+          <label for="primary-color">Primary Color</label>
+          <input type="color" id="primary-color" value="#6366f1">
+        </div>
+        
+        <div class="control-group">
+          <h3>Data Analysis</h3>
+          <p>Apply statistical transformations</p>
+          
+          <label for="aggregation">Aggregation</label>
+          <select id="aggregation">
+            <option value="sum">Sum</option>
+            <option value="average">Average</option>
+            <option value="median">Median</option>
+            <option value="min">Minimum</option>
+            <option value="max">Maximum</option>
+          </select>
+          
+          <button id="apply-filters">Apply Filters</button>
+          <button id="reset-filters">Reset to Default</button>
+        </div>
+      </div>
+      
+      <div class="visualization">
+        <div class="tabs">
+          <div class="tab active" data-tab="chart">Chart View</div>
+          <div class="tab" data-tab="table">Table View</div>
+          <div class="tab" data-tab="map">Geographic Map</div>
+        </div>
+        
+        <div class="chart-container">
+          <canvas id="main-chart"></canvas>
+          <div class="loader">
+            <div class="spinner"></div>
+          </div>
+          <div class="tooltip"></div>
+        </div>
+        
+        <div class="legend"></div>
+      </div>
+    </div>
+    
+    <div class="data-insights">
+      <h2>Data Insights</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value">$1.28M</div>
+          <div class="stat-trend">↑ 12.4%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg. Growth</div>
+          <div class="stat-value">8.7%</div>
+          <div class="stat-trend">↑ 2.1%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Customers</div>
+          <div class="stat-value">5,294</div>
+          <div class="stat-trend">↑ 5.8%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Profit Margin</div>
+          <div class="stat-value">24.3%</div>
+          <div class="stat-trend">↓ 1.2%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <footer>
+    <p>DataViz Explorer &copy; 2025 | Real-time Data Visualization</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    // DOM Elements
+    const chartCanvas = document.getElementById('main-chart');
+    const loader = document.querySelector('.loader');
+    const tooltip = document.querySelector('.tooltip');
+    const legendContainer = document.querySelector('.legend');
+    const tabs = document.querySelectorAll('.tab');
+    const applyFiltersBtn = document.getElementById('apply-filters');
+    const resetFiltersBtn = document.getElementById('reset-filters');
+    
+    // Form Controls
+    const datasetSelect = document.getElementById('dataset');
+    const xAxisSelect = document.getElementById('x-axis');
+    const yAxisSelect = document.getElementById('y-axis');
+    const segmentSelect = document.getElementById('segment');
+    const chartTypeSelect = document.getElementById('chart-type');
+    const themeSelect = document.getElementById('theme');
+    const animationSpeedInput = document.getElementById('animation-speed');
+    const primaryColorInput = document.getElementById('primary-color');
+    const aggregationSelect = document.getElementById('aggregation');
+    
+    // Chart instance
+    let mainChart;
+    
+    // Simulated datasets
+    const datasets = {
+      sales: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [
+          {
+            label: 'Revenue',
+            data: [86000, 92400, 89700, 96500, 105300, 112800, 118400, 123900, 116500, 110200, 118900, 127500],
+            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+          },
+          {
+            label: 'Profit',
+            data: [32600, 35700, 33400, 36800, 41500, 44200, 46700, 48300, 42900, 38600, 43200, 46800],
+            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+          }
+        ]
+      },
+      financial: {
+        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+        datasets: [
+          {
+            label: 'Revenue',
+            data: [268100, 314600, 358800, 356600],
+            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+          },
+          {
+            label: 'Expenses',
+            data: [185000, 210000, 235000, 226000],
+            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+            borderColor: 'rgba(239, 68, 68, 1)',
+          },
+          {
+            label: 'Profit',
+            data: [83100, 104600, 123800, 130600],
+            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+          }
+        ]
+      },
+      marketing: {
+        labels: ['Email', 'Social', 'Search', 'Direct', 'Referral', 'Display'],
+        datasets: [
+          {
+            label: 'Conversion Rate',
+            data: [3.2, 2.1, 4.5, 5.3, 2.8, 1.9],
+            backgroundColor: [
+              'rgba(99, 102, 241, 0.7)',
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(249, 115, 22, 0.7)',
+              'rgba(239, 68, 68, 0.7)',
+              'rgba(139, 92, 246, 0.7)',
+              'rgba(20, 184, 166, 0.7)'
+            ],
+            borderColor: [
+              'rgba(99, 102, 241, 1)',
+              'rgba(16, 185, 129, 1)',
+              'rgba(249, 115, 22, 1)',
+              'rgba(239, 68, 68, 1)',
+              'rgba(139, 92, 246, 1)',
+              'rgba(20, 184, 166, 1)'
+            ],
+          }
+        ]
+      }
+    };
+    
+    // Color themes
+    const colorThemes = {
+      default: {
+        backgroundColor: [
+          'rgba(99, 102, 241, 0.5)',
+          'rgba(16, 185, 129, 0.5)',
+          'rgba(249, 115, 22, 0.5)',
+          'rgba(239, 68, 68, 0.5)',
+          'rgba(139, 92, 246, 0.5)',
+          'rgba(20, 184, 166, 0.5)'
+        ],
+        borderColor: [
+          'rgba(99, 102, 241, 1)',
+          'rgba(16, 185, 129, 1)',
+          'rgba(249, 115, 22, 1)',
+          'rgba(239, 68, 68, 1)',
+          'rgba(139, 92, 246, 1)',
+          'rgba(20, 184, 166, 1)'
+        ]
+      },
+      pastel: {
+        backgroundColor: [
+          'rgba(195, 218, 254, 0.5)',
+          'rgba(188, 240, 218, 0.5)',
+          'rgba(254, 226, 203, 0.5)',
+          'rgba(254, 205, 211, 0.5)',
+          'rgba(220, 215, 254, 0.5)',
+          'rgba(187, 247, 244, 0.5)'
+        ],
+        borderColor: [
+          'rgba(147, 197, 253, 1)',
+          'rgba(134, 239, 172, 1)',
+          'rgba(253, 186, 116, 1)',
+          'rgba(252, 165, 165, 1)',
+          'rgba(165, 180, 252, 1)',
+          'rgba(139, 233, 253, 1)'
+        ]
+      },
+      monochrome: {
+        backgroundColor: [
+          'rgba(30, 41, 59, 0.9)',
+          'rgba(30, 41, 59, 0.75)',
+          'rgba(30, 41, 59, 0.6)',
+          'rgba(30, 41, 59, 0.45)',
+          'rgba(30, 41, 59, 0.3)',
+          'rgba(30, 41, 59, 0.15)'
+        ],
+        borderColor: [
+          'rgba(30, 41, 59, 1)',
+          'rgba(30, 41, 59, 1)',
+          'rgba(30, 41, 59, 1)',
+          'rgba(30, 41, 59, 1)',
+          'rgba(30, 41, 59, 1)',
+          'rgba(30, 41, 59, 1)'
+        ]
+      },
+      warm: {
+        backgroundColor: [
+          'rgba(249, 115, 22, 0.5)',
+          'rgba(234, 88, 12, 0.5)',
+          'rgba(217, 70, 239, 0.5)',
+          'rgba(236, 72, 153, 0.5)',
+          'rgba(244, 63, 94, 0.5)',
+          'rgba(239, 68, 68, 0.5)'
+        ],
+        borderColor: [
+          'rgba(249, 115, 22, 1)',
+          'rgba(234, 88, 12, 1)',
+          'rgba(217, 70, 239, 1)',
+          'rgba(236, 72, 153, 1)',
+          'rgba(244, 63, 94, 1)',
+          'rgba(239, 68, 68, 1)'
+        ]
+      },
+      cool: {
+        backgroundColor: [
+          'rgba(99, 102, 241, 0.5)',
+          'rgba(79, 70, 229, 0.5)',
+          'rgba(139, 92, 246, 0.5)',
+          'rgba(20, 184, 166, 0.5)',
+          'rgba(6, 182, 212, 0.5)',
+          'rgba(59, 130, 246, 0.5)'
+        ],
+        borderColor: [
+          'rgba(99, 102, 241, 1)',
+          'rgba(79, 70, 229, 1)',
+          'rgba(139, 92, 246, 1)',
+          'rgba(20, 184, 166, 1)',
+          'rgba(6, 182, 212, 1)',
+          'rgba(59, 130, 246, 1)'
+        ]
+      }
+    };
+    
+    // Initialize the chart
+    function initChart() {
+      const ctx = chartCanvas.getContext('2d');
+      mainChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: []
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: parseInt(animationSpeedInput.value)
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              enabled: false,
+              external: externalTooltipHandler
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+      
+      updateChart();
+    }
+    
+    // Update chart based on selected options
+    function updateChart() {
+      loader.classList.add('active');
+      
+      // Simulate data loading
+      setTimeout(() => {
+        const selectedDataset = datasetSelect.value;
+        const chartType = chartTypeSelect.value;
+        const theme = themeSelect.value;
+        const animationSpeed = parseInt(animationSpeedInput.value);
+        const primaryColor = primaryColorInput.value;
+        
+        // Get the data
+        const data = JSON.parse(JSON.stringify(datasets[selectedDataset]));
+        
+        // Apply color theme
+        data.datasets.forEach((dataset, index) => {
+          if (Array.isArray(dataset.backgroundColor)) {
+            dataset.backgroundColor = colorThemes[theme].backgroundColor;
+            dataset.borderColor = colorThemes[theme].borderColor;
+          } else {
+            dataset.backgroundColor = colorThemes[theme].backgroundColor[index % colorThemes[theme].backgroundColor.length];
+            dataset.borderColor = colorThemes[theme].borderColor[index % colorThemes[theme].borderColor.length];
+          }
+        });
+        
+        // Apply primary color to first dataset if specified
+        if (primaryColor !== '#6366f1') {
+          const primaryRgba = hexToRgba(primaryColor, 0.5);
+          const primaryRgbaSolid = hexToRgba(primaryColor, 1);
+          
+          if (data.datasets[0]) {
+            if (Array.isArray(data.datasets[0].backgroundColor)) {
+              data.datasets[0].backgroundColor[0] = primaryRgba;
+              data.datasets[0].borderColor[0] = primaryRgbaSolid;
+            } else {
+              data.datasets[0].backgroundColor = primaryRgba;
+              data.datasets[0].borderColor = primaryRgbaSolid;
+            }
+          }
+        }
+        
+        // Update chart type and data
+        mainChart.config.type = chartType;
+        mainChart.data = data;
+        mainChart.options.animation.duration = animationSpeed;
+        
+        // Update scales based on chart type
+        if (chartType === 'pie' || chartType === 'radar' || chartType === 'polarArea' || chartType === 'doughnut') {
+          mainChart.options.scales = {};
+        } else {
+          mainChart.options.scales = {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          };
+        }
+        
+        mainChart.update();
+        updateLegend(data.datasets);
+        
+        loader.classList.remove('active');
+      }, 800);
+    }
+    
+    // Convert hex color to rgba
+    function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    
+    // Update legend
+    function updateLegend(datasets) {
+      legendContainer.innerHTML = '';
+      
+      datasets.forEach(dataset => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        
+        const legendColor = document.createElement('div');
+        legendColor.className = 'legend-color';
+        
+        if (Array.isArray(dataset.backgroundColor)) {
+          legendColor.style.backgroundColor = dataset.borderColor[0];
+        } else {
+          legendColor.style.backgroundColor = dataset.borderColor;
+        }
+        
+        const legendText = document.createElement('span');
+        legendText.textContent = dataset.label;
+        
+        legendItem.appendChild(legendColor);
+        legendItem.appendChild(legendText);
+        legendContainer.appendChild(legendItem);
+      });
+    }
+    
+    // Custom tooltip handler
+    function externalTooltipHandler(context) {
+      if (!context.tooltip || !context.tooltip.dataPoints || context.tooltip.dataPoints.length === 0) {
+        tooltip.style.display = 'none';
+        return;
+      }
+      
+      const dataPoint = context.tooltip.dataPoints[0];
+      
+      tooltip.style.display = 'block';
+      tooltip.style.left = context.chart.canvas.offsetLeft + dataPoint.element.x + 'px';
+      tooltip.style.top = context.chart.canvas.offsetTop + dataPoint.element.y - 40 + 'px';
+      
+      tooltip.innerHTML = `
+        <div>${dataPoint.dataset.label}</div>
+        <div>${dataPoint.label}: ${dataPoint.formattedValue}</div>
+      `;
+    }
+    
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+    
+    // Event listeners
+    applyFiltersBtn.addEventListener('click', updateChart);
+    resetFiltersBtn.addEventListener('click', () => {
+      datasetSelect.value = 'sales';
+      xAxisSelect.value = 'month';
+      yAxisSelect.value = 'revenue';
+      segmentSelect.value = 'none';
+      chartTypeSelect.value = 'bar';
+      themeSelect.value = 'default';
+      animationSpeedInput.value = '800';
+      primaryColorInput.value = '#6366f1';
+      aggregationSelect.value = 'sum';
+      
+      updateChart();
+    });
+    
+    chartTypeSelect.addEventListener('change', updateChart);
+    themeSelect.addEventListener('change', updateChart);
+    datasetSelect.addEventListener('change', updateChart);
+    primaryColorInput.addEventListener('input', updateChart);
+    
+    // Add random data function (simulating real-time updates)
+    function addRandomData() {
+      if (mainChart && mainChart.data.datasets.length > 0) {
+        const randomValue = Math.floor(Math.random() * 30000) + 80000;
+        
+        if (mainChart.data.datasets[0].data.length > 11) {
+          mainChart.data.datasets[0].data.shift();
+          mainChart.data.datasets.forEach(dataset => {
+            if (dataset.data.length > 11) {
+              dataset.data.shift();
+            }
+          });
+          
+          if (mainChart.data.labels.length > 11) {
+            mainChart.data.labels.shift();
+          }
+        }
+        
+        if (mainChart.config.type === 'line') {
+          const lastValue = mainChart.data.datasets[0].data[mainChart.data.datasets[0].data.length - 1];
+          const newValue = Math.max(lastValue * (0.9 + Math.random() * 0.2), 60000);
+          mainChart.data.datasets[0].data.push(newValue);
+          
+          if (mainChart.data.datasets[1]) {
+            const profitValue = newValue * (0.3 + Math.random() * 0.1);
+            mainChart.data.datasets[1].data.push(profitValue);
+          }
+          
+          const lastMonth = parseInt(mainChart.data.labels[mainChart.data.labels.length - 1].replace('Month ', ''));
+          mainChart.data.labels.push(`Month ${lastMonth + 1}`);
+          
+          mainChart.update();
+          
+          // Update stats
+          const statValues = document.querySelectorAll('.stat-value');
+          const statTrends = document.querySelectorAll('.stat-trend');
+          
+          statValues[0].textContent = '$' + (1.28 + (Math.random() * 0.2 - 0.1)).toFixed(2) + 'M';
+          statValues[1].textContent = (8.7 + (Math.random() * 1 - 0.5)).toFixed(1) + '%';
+          statValues[2].textContent = (5294 + Math.floor(Math.random() * 200 - 100)).toLocaleString();
+          statValues[3].textContent = (24.3 + (Math.random() * 2 - 1)).toFixed(1) + '%';
+          
+          const trends = [
+            (Math.random() * 3 + 10).toFixed(1) + '%',
+            (Math.random() * 2 + 1).toFixed(1) + '%',
+            (Math.random() * 2 + 4).toFixed(1) + '%',
+            (Math.random() * 4 - 2).toFixed(1) + '%'
+          ];
+          
+          statTrends.forEach((trend, i) => {
+            const value = parseFloat(trends[i]);
+            if (value >= 0) {
+              trend.textContent = '↑ ' + trends[i];
+              trend.style.color = '#10b981';
+            } else {
+              trend.textContent = '↓ ' + trends[i].substring(1);
+              trend.style.color = '#ef4444';
+            }
+          });
+        }
+      }
+    }
+    
+    // Initial setup
+    initChart();
+    
+    // Set up simulated real-time data updates
+    setInterval(() => {
+      if (Math.random() > 0.7) {
+        addRandomData();
+      }
+    }, 3000);
+    
+    // File Upload Handler
+    const handleFileUpload = () => {
+      // Add a file upload button to the controls
+      const fileUpload = document.createElement('input');
+      fileUpload.type = 'file';
+      fileUpload.accept = '.csv,.json,.xlsx';
+      fileUpload.style.display = 'none';
+      
+      const uploadButton = document.createElement('button');
+      uploadButton.textContent = 'Upload Data File';
+      uploadButton.style.marginTop = '1rem';
+      uploadButton.style.backgroundColor = '#64748b';
+      
+      uploadButton.addEventListener('click', () => {
+        fileUpload.click();
+      });
+      
+      fileUpload.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          const file = e.target.files[0];
+          uploadButton.textContent = `Processing: ${file.name}`;
+          uploadButton.disabled = true;
+          
+          // Simulate processing
+          setTimeout(() => {
+            uploadButton.textContent = `Data Loaded: ${file.name}`;
+            uploadButton.style.backgroundColor = '#10b981';
+            
+            // Generate random data for demonstration
+            const customData = {
+              labels: ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'],
+              datasets: [
+                {
+                  label: 'Custom Data',
+                  data: [
+                    Math.random() * 100,
+                    Math.random() * 100,
+                    Math.random() * 100,
+                    Math.random() * 100,
+                    Math.random() * 100
+                  ],
+                  backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                  borderColor: 'rgba(99, 102, 241, 1)',
+                }
+              ]
+            };
+            
+            datasets.custom = customData;
+            datasetSelect.value = 'custom';
+            updateChart();
+            
+            // Re-enable the upload button after a delay
+            setTimeout(() => {
+              uploadButton.disabled = false;
+              uploadButton.textContent = 'Upload New Data File';
+            }, 3000);
+          }, 1500);
+        }
+      });
+      
+      document.querySelector('.controls .control-group:first-child').appendChild(uploadButton);
+      document.body.appendChild(fileUpload);
+    };
+    
+    // Data Export Handler
+    const setupExportButton = () => {
+      const exportButton = document.createElement('button');
+      exportButton.textContent = 'Export Current Data';
+      exportButton.style.marginTop = '1rem';
+      exportButton.style.backgroundColor = '#64748b';
+      
+      exportButton.addEventListener('click', () => {
+        exportButton.textContent = 'Preparing Export...';
+        exportButton.disabled = true;
+        
+        // Simulate export preparation
+        setTimeout(() => {
+          // Create a fake download link
+          const link = document.createElement('a');
+          link.download = 'dataviz_export.json';
+          
+          // Create a blob with the current chart data
+          const dataStr = JSON.stringify(mainChart.data, null, 2);
+          const blob = new Blob([dataStr], { type: 'application/json' });
+          link.href = URL.createObjectURL(blob);
+          
+          // Trigger download
+          link.click();
+          
+          exportButton.textContent = 'Export Complete!';
+          exportButton.style.backgroundColor = '#10b981';
+          
+          // Reset the button after a delay
+          setTimeout(() => {
+            exportButton.disabled = false;
+            exportButton.textContent = 'Export Current Data';
+            exportButton.style.backgroundColor = '#64748b';
+          }, 2000);
+        }, 1000);
+      });
+      
+      document.querySelector('.controls .control-group:last-child').appendChild(exportButton);
+    };
+    
+    // Add a table view for the data
+    const setupTableView = () => {
+      const tabContents = document.createElement('div');
+      tabContents.className = 'tab-contents';
+      tabContents.style.display = 'none';
+      tabContents.style.overflow = 'auto';
+      tabContents.style.maxHeight = '400px';
+      tabContents.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+          <thead>
+            <tr style="background-color: #f8f9fa; font-weight: 600;">
+              <th style="padding: 0.75rem; text-align: left; border-bottom: 2px solid #e2e8f0;">Category</th>
+              <th style="padding: 0.75rem; text-align: right; border-bottom: 2px solid #e2e8f0;">Value</th>
+              <th style="padding: 0.75rem; text-align: right; border-bottom: 2px solid #e2e8f0;">Change</th>
+            </tr>
+          </thead>
+          <tbody id="data-table-body">
+          </tbody>
+        </table>
+      `;
+      
+      document.querySelector('.chart-container').after(tabContents);
+      
+      // Handle tab switching
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabId = tab.getAttribute('data-tab');
+          
+          if (tabId === 'table') {
+            chartCanvas.style.display = 'none';
+            tabContents.style.display = 'block';
+            
+            // Populate table with current chart data
+            const tableBody = document.getElementById('data-table-body');
+            tableBody.innerHTML = '';
+            
+            if (mainChart && mainChart.data) {
+              mainChart.data.labels.forEach((label, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">${label}</td>
+                  <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e2e8f0;">
+                    ${mainChart.data.datasets[0].data[index].toLocaleString()}
+                  </td>
+                  <td style="padding: 0.75rem; text-align: right; border-bottom: 1px solid #e2e8f0; color: ${
+                    index > 0 && mainChart.data.datasets[0].data[index] > mainChart.data.datasets[0].data[index-1] 
+                      ? '#10b981' 
+                      : '#ef4444'
+                  }">
+                    ${
+                      index > 0 
+                        ? (((mainChart.data.datasets[0].data[index] / mainChart.data.datasets[0].data[index-1]) - 1) * 100).toFixed(2) + '%' 
+                        : '-'
+                    }
+                  </td>
+                `;
+                tableBody.appendChild(tr);
+              });
+            }
+          } else {
+            chartCanvas.style.display = 'block';
+            tabContents.style.display = 'none';
+            
+            if (tabId === 'map') {
+              // Display a simple geographic visualization
+              if (mainChart) {
+                mainChart.config.type = 'bubble';
+                mainChart.data = {
+                  datasets: [{
+                    label: 'Regional Performance',
+                    data: [
+                      { x: 20, y: 30, r: 15, region: 'North America' },
+                      { x: 40, y: 10, r: 10, region: 'Europe' },
+                      { x: 80, y: 40, r: 20, region: 'Asia Pacific' },
+                      { x: 60, y: 60, r: 8, region: 'Latin America' },
+                      { x: 30, y: 70, r: 5, region: 'Africa' }
+                    ],
+                    backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                    borderColor: 'rgba(99, 102, 241, 1)'
+                  }]
+                };
+                mainChart.options = {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    x: {
+                      min: 0,
+                      max: 100,
+                      grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                      },
+                      title: {
+                        display: true,
+                        text: 'Market Share (%)'
+                      }
+                    },
+                    y: {
+                      min: 0,
+                      max: 100,
+                      grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                      },
+                      title: {
+                        display: true,
+                        text: 'Growth Rate (%)'
+                      }
+                    }
+                  },
+                  plugins: {
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          return context.raw.region + ': ' + context.raw.r + '% of total revenue';
+                        }
+                      }
+                    }
+                  }
+                };
+                mainChart.update();
+              }
+            } else {
+              // Reset to chart view
+              updateChart();
+            }
+          }
+        });
+      });
+    };
+    
+    // Advanced Analysis Features
+    const setupAdvancedAnalysis = () => {
+      // Add trend line option to the chart
+      const addTrendlineBtn = document.createElement('button');
+      addTrendlineBtn.textContent = 'Show Trend Line';
+      addTrendlineBtn.style.marginTop = '1rem';
+      addTrendlineBtn.style.backgroundColor = '#64748b';
+      
+      addTrendlineBtn.addEventListener('click', () => {
+        if (mainChart && mainChart.data && mainChart.data.datasets.length > 0) {
+          const datasetIndex = 0;
+          const dataset = mainChart.data.datasets[datasetIndex];
+          const data = dataset.data;
+          
+          // Only add trendline for line charts
+          if (mainChart.config.type === 'line') {
+            // Simple linear regression
+            let sumX = 0;
+            let sumY = 0;
+            let sumXY = 0;
+            let sumXX = 0;
+            let n = data.length;
+            
+            for (let i = 0; i < n; i++) {
+              sumX += i;
+              sumY += data[i];
+              sumXY += i * data[i];
+              sumXX += i * i;
+            }
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            // Create trendline data
+            const trendlineData = [];
+            for (let i = 0; i < n; i++) {
+              trendlineData.push(intercept + slope * i);
+            }
+            
+            // Check if trendline already exists
+            const trendlineIndex = mainChart.data.datasets.findIndex(ds => ds.label === 'Trend Line');
+            
+            if (trendlineIndex === -1) {
+              // Add new trendline dataset
+              mainChart.data.datasets.push({
+                label: 'Trend Line',
+                data: trendlineData,
+                borderColor: '#ef4444',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                tension: 0
+              });
+              addTrendlineBtn.textContent = 'Hide Trend Line';
+              addTrendlineBtn.style.backgroundColor = '#ef4444';
+            } else {
+              // Remove existing trendline
+              mainChart.data.datasets.splice(trendlineIndex, 1);
+              addTrendlineBtn.textContent = 'Show Trend Line';
+              addTrendlineBtn.style.backgroundColor = '#64748b';
+            }
+            
+            mainChart.update();
+          } else {
+            alert('Trend lines are only available for line charts. Please change your chart type first.');
+          }
+        }
+      });
+      
+      document.querySelector('.controls .control-group:nth-child(2)').appendChild(addTrendlineBtn);
+    };
+    
+    // Forecasting Feature
+    const setupForecasting = () => {
+      const forecastBtn = document.createElement('button');
+      forecastBtn.textContent = 'Show 3-Month Forecast';
+      forecastBtn.style.marginTop = '1rem';
+      
+      forecastBtn.addEventListener('click', () => {
+        if (mainChart && mainChart.data && mainChart.data.datasets.length > 0) {
+          // Only forecast for line charts
+          if (mainChart.config.type === 'line' || mainChart.config.type === 'bar') {
+            forecastBtn.textContent = 'Calculating Forecast...';
+            forecastBtn.disabled = true;
+            
+            setTimeout(() => {
+              const datasetIndex = 0;
+              const dataset = mainChart.data.datasets[datasetIndex];
+              const data = [...dataset.data];
+              const labels = [...mainChart.data.labels];
+              
+              // Simple exponential smoothing forecast
+              const alpha = 0.3;
+              const lastValues = data.slice(-3);
+              const forecast = [];
+              
+              // Calculate forecast for next 3 months
+              let lastValue = data[data.length - 1];
+              for (let i = 0; i < 3; i++) {
+                lastValue = alpha * lastValues[i % lastValues.length] + (1 - alpha) * lastValue;
+                // Add some randomness
+                lastValue *= (0.95 + Math.random() * 0.1);
+                forecast.push(lastValue);
+                
+                // Generate label for the next month
+                if (labels[0].startsWith('Month')) {
+                  const lastMonthNum = parseInt(labels[labels.length - 1].split(' ')[1]);
+                  labels.push(`Month ${lastMonthNum + i + 1}`);
+                } else if (labels[0].match(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/)) {
+                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  const lastMonth = labels[labels.length - 1];
+                  const lastMonthIndex = months.indexOf(lastMonth);
+                  labels.push(months[(lastMonthIndex + i + 1) % 12]);
+                } else {
+                  labels.push(`Forecast ${i + 1}`);
+                }
+              }
+              
+              // Check if forecast already exists
+              const forecastIndex = mainChart.data.datasets.findIndex(ds => ds.label === 'Forecast');
+              
+              if (forecastIndex === -1) {
+                // Add forecast data
+                mainChart.data.labels = labels;
+                
+                // Add new dataset for forecast
+                mainChart.data.datasets.push({
+                  label: 'Forecast',
+                  data: [...Array(data.length).fill(null), ...forecast],
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  pointRadius: 4
+                });
+                
+                forecastBtn.textContent = 'Hide Forecast';
+                forecastBtn.style.backgroundColor = '#10b981';
+              } else {
+                // Remove forecast
+                mainChart.data.labels = labels.slice(0, -3);
+                mainChart.data.datasets.splice(forecastIndex, 1);
+                forecastBtn.textContent = 'Show 3-Month Forecast';
+                forecastBtn.style.backgroundColor = 'var(--primary)';
+              }
+              
+              mainChart.update();
+              forecastBtn.disabled = false;
+            }, 1000);
+          } else {
+            alert('Forecasting is only available for line and bar charts. Please change your chart type first.');
+          }
+        }
+      });
+      
+      document.querySelector('.controls .control-group:last-child').appendChild(forecastBtn);
+    };
+    
+    // Add Dark Mode Toggle
+    const setupDarkMode = () => {
+      const darkModeToggle = document.createElement('button');
+      darkModeToggle.textContent = '🌙 Dark Mode';
+      darkModeToggle.style.marginTop = '1.5rem';
+      darkModeToggle.style.backgroundColor = '#1e293b';
+      
+      let isDarkMode = false;
+      
+      darkModeToggle.addEventListener('click', () => {
+        isDarkMode = !isDarkMode;
+        
+        if (isDarkMode) {
+          document.documentElement.style.setProperty('--light', '#0f172a');
+          document.documentElement.style.setProperty('--dark', '#f8fafc');
+          document.documentElement.style.setProperty('--gray-light', '#334155');
+          document.body.style.backgroundColor = '#0f172a';
+          document.body.style.color = '#f8fafc';
+          
+          darkModeToggle.textContent = '☀️ Light Mode';
+          darkModeToggle.style.backgroundColor = '#f8fafc';
+          darkModeToggle.style.color = '#0f172a';
+          
+          // Update chart options for dark mode
+          if (mainChart) {
+            mainChart.options.scales.y.grid.color = 'rgba(255, 255, 255, 0.1)';
+            mainChart.options.scales.x.ticks = { color: 'rgba(255, 255, 255, 0.7)' };
+            mainChart.options.scales.y.ticks = { color: 'rgba(255, 255, 255, 0.7)' };
+            mainChart.update();
+          }
+          
+          // Update card backgrounds
+          document.querySelectorAll('.controls, .visualization, .data-insights').forEach(el => {
+            el.style.backgroundColor = '#1e293b';
+            el.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
+          });
+          
+          document.querySelectorAll('.stat-card').forEach(el => {
+            el.style.backgroundColor = '#0f172a';
+          });
+        } else {
+          document.documentElement.style.setProperty('--light', '#f8fafc');
+          document.documentElement.style.setProperty('--dark', '#1e293b');
+          document.documentElement.style.setProperty('--gray-light', '#cbd5e1');
+          document.body.style.backgroundColor = '#f8fafc';
+          document.body.style.color = '#1e293b';
+          
+          darkModeToggle.textContent = '🌙 Dark Mode';
+          darkModeToggle.style.backgroundColor = '#1e293b';
+          darkModeToggle.style.color = 'white';
+          
+          // Reset chart options
+          if (mainChart) {
+            mainChart.options.scales.y.grid.color = 'rgba(0, 0, 0, 0.05)';
+            mainChart.options.scales.x.ticks = { color: undefined };
+            mainChart.options.scales.y.ticks = { color: undefined };
+            mainChart.update();
+          }
+          
+          // Reset card backgrounds
+          document.querySelectorAll('.controls, .visualization, .data-insights').forEach(el => {
+            el.style.backgroundColor = 'white';
+            el.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.05)';
+          });
+          
+          document.querySelectorAll('.stat-card').forEach(el => {
+            el.style.backgroundColor = '#f8f9fa';
+          });
+        }
+      });
+      
+      document.querySelector('.container').prepend(darkModeToggle);
+    };
+    
+    // Initialize additional features
+    handleFileUpload();
+    setupExportButton();
+    setupTableView();
+    setupAdvancedAnalysis();
+    setupForecasting();
+    setupDarkMode();
+  </script>
+</body>
+</html>
